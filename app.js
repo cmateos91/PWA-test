@@ -1,5 +1,6 @@
 let deferredPrompt;
 const installBtn = document.getElementById('installBtn');
+
 const iosInstallBtn = document.getElementById('iosInstallBtn');
 
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -12,6 +13,7 @@ if (isIos() && !isInStandaloneMode()) {
 iosInstallBtn.addEventListener('click', () => {
     alert('Para instalar la app, abre el menú de compartir y elige "Agregar a pantalla de inicio".');
 });
+
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();

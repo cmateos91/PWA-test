@@ -12,4 +12,3 @@ python3 -m http.server 8000
 ```
 
 3. Visita `http://localhost:8000` en tu navegador. Verás un botón para instalar la aplicación cuando el navegador lo permita.
-   - En iOS Safari aparecerá un botón extra con instrucciones para añadir la app a la pantalla de inicio.

@@ -5,6 +5,7 @@ body {
 }
 
 #installBtn, #iosInstallBtn {
+#installBtn {
     padding: 10px 20px;
     font-size: 16px;
     background-color: #4CAF50;
@@ -12,4 +13,5 @@ body {
     border: none;
     border-radius: 5px;
     margin: 5px;
+
 }
