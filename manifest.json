@@ -1,6 +1,11 @@
 {
   "name": "PWA Test",
   "short_name": "PWATest",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50"
+
   "description": "Una aplicación web progresiva de demostración",
   "start_url": "/",
   "display": "standalone",
