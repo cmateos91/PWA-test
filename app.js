@@ -4,6 +4,12 @@ const installBtn = document.getElementById('installBtn');
 const iosInstructions = document.getElementById('iosInstallInstructions');
 const installStatus = document.getElementById('installStatus');
 
+//debug info
+console.log('PWA Script cargado');
+console.log('User Agent:', navigator.userAgent);
+console.log('HTTPS:', location.protocol === 'https:');
+console.log('Service Worker soportado:', 'serviceWorker' in navigator);
+
 //detectar si es ios
 const isIos = () => {
   const userAgent = window.navigator.userAgent.toLowerCase();
@@ -30,6 +36,7 @@ if ('serviceWorker' in navigator) {
 
 //manejar el evento beforeinstallprompt
 window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('Evento beforeinstallprompt detectado!');
   //prevenir el mini-infobar
   e.preventDefault();
   //guardar el evento para usarlo después
@@ -108,3 +115,15 @@ window.addEventListener('load', () => {
     showStatus('La app está ejecutándose en modo standalone', 'info');
   }
 });
+
+//función para forzar mostrar el botón (debug)
+function forceShowInstall() {
+  console.log('Forzando visualización del botón...');
+  if (isIos()) {
+    iosInstructions.style.display = 'block';
+    showStatus('Mostrando instrucciones para iOS', 'info');
+  } else {
+    installBtn.style.display = 'inline-flex';
+    showStatus('Botón mostrado (modo debug)', 'warning');
+  }
+}

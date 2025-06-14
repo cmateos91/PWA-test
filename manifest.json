@@ -2,7 +2,7 @@
   "name": "PWA Test App",
   "short_name": "PWA Test",
   "description": "Una aplicación de prueba para PWA",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "theme_color": "#4CAF50",
   "background_color": "#ffffff",

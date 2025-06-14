@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Debug</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .info {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>PWA Debug Info</h1>
+    
+    <div class="info">
+        <h3>Información del Sistema:</h3>
+        <div id="systemInfo"></div>
+    </div>
+    
+    <div class="info">
+        <h3>Estado PWA:</h3>
+        <div id="pwaStatus"></div>
+    </div>
+    
+    <div class="info">
+        <h3>Acciones de Prueba:</h3>
+        <button onclick="testInstall()">Probar Instalación Manual</button>
+        <button onclick="checkManifest()">Verificar Manifest</button>
+        <button onclick="checkSW()">Verificar Service Worker</button>
+        <button onclick="clearData()">Limpiar Datos</button>
+    </div>
+    
+    <div class="info">
+        <h3>Logs:</h3>
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        let deferredPrompt;
+        const logs = document.getElementById('logs');
+        const systemInfo = document.getElementById('systemInfo');
+        const pwaStatus = document.getElementById('pwaStatus');
+        
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            logs.innerHTML += `<div class="${type}">[${time}] ${message}</div>`;
+        }
+        
+        //mostrar info del sistema
+        systemInfo.innerHTML = `
+            <p><strong>URL:</strong> ${location.href}</p>
+            <p><strong>Protocolo:</strong> ${location.protocol} ${location.protocol === 'https:' ? '<span class="success">✓ HTTPS</span>' : '<span class="error">✗ Necesitas HTTPS</span>'}</p>
+            <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+            <p><strong>Plataforma:</strong> ${navigator.platform}</p>
+            <p><strong>Service Worker:</strong> ${'serviceWorker' in navigator ? '<span class="success">✓ Soportado</span>' : '<span class="error">✗ No soportado</span>'}</p>
+            <p><strong>Display Mode:</strong> ${window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
+        `;
+        
+        //verificar requisitos pwa
+        function checkPWARequirements() {
+            let status = '';
+            
+            //https
+            if (location.protocol === 'https:' || location.hostname === 'localhost') {
+                status += '<p class="success">✓ HTTPS o localhost detectado</p>';
+            } else {
+                status += '<p class="error">✗ Se requiere HTTPS (o localhost)</p>';
+            }
+            
+            //service worker
+            if ('serviceWorker' in navigator) {
+                status += '<p class="success">✓ Service Worker soportado</p>';
+            } else {
+                status += '<p class="error">✗ Service Worker no soportado</p>';
+            }
+            
+            //manifest
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            if (manifestLink) {
+                status += '<p class="success">✓ Manifest enlazado</p>';
+            } else {
+                status += '<p class="error">✗ Manifest no encontrado</p>';
+            }
+            
+            pwaStatus.innerHTML = status;
+        }
+        
+        //registrar service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => {
+                    log('Service Worker registrado', 'success');
+                    log(`Scope: ${reg.scope}`);
+                })
+                .catch(err => {
+                    log('Error al registrar SW: ' + err, 'error');
+                });
+        }
+        
+        //escuchar evento de instalación
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            log('¡Evento beforeinstallprompt capturado!', 'success');
+            log('La app puede ser instalada');
+        });
+        
+        //probar instalación manual
+        function testInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') {
+                        log('Usuario aceptó la instalación', 'success');
+                    } else {
+                        log('Usuario rechazó la instalación', 'warning');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                log('No hay evento de instalación disponible', 'warning');
+                log('Posibles razones:');
+                log('- No estás usando HTTPS');
+                log('- La app ya está instalada');
+                log('- El navegador no soporta PWA');
+                log('- Falta algún requisito PWA');
+            }
+        }
+        
+        //verificar manifest
+        async function checkManifest() {
+            try {
+                const response = await fetch('/manifest.json');
+                const manifest = await response.json();
+                log('Manifest cargado correctamente', 'success');
+                log(`Nombre: ${manifest.name}`);
+                log(`Display: ${manifest.display}`);
+                log(`Start URL: ${manifest.start_url}`);
+                log(`Iconos: ${manifest.icons.length} tamaños`);
+            } catch (err) {
+                log('Error al cargar manifest: ' + err, 'error');
+            }
+        }
+        
+        //verificar service worker
+        async function checkSW() {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                if (registrations.length > 0) {
+                    log(`${registrations.length} Service Worker(s) registrado(s)`, 'success');
+                    registrations.forEach(reg => {
+                        log(`SW Scope: ${reg.scope}`);
+                        log(`SW State: ${reg.active ? reg.active.state : 'no activo'}`);
+                    });
+                } else {
+                    log('No hay Service Workers registrados', 'warning');
+                }
+            }
+        }
+        
+        //limpiar datos
+        async function clearData() {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+                log('Service Workers desregistrados', 'success');
+            }
+            
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                for (let name of cacheNames) {
+                    await caches.delete(name);
+                }
+                log('Caches eliminados', 'success');
+            }
+            
+            log('Recarga la página para reiniciar', 'warning');
+        }
+        
+        //verificar al cargar
+        window.addEventListener('load', () => {
+            checkPWARequirements();
+            log('Página cargada');
+            
+            //verificar si es ios
+            const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+            if (isIos) {
+                log('Dispositivo iOS detectado - La instalación debe hacerse manualmente desde Safari', 'warning');
+            }
+        });
+        
+        //detectar instalación
+        window.addEventListener('appinstalled', () => {
+            log('¡App instalada!', 'success');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Checker - Brave</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 5px 10px; 
+            border-radius: 5px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .ok { background: #d4edda; color: #155724; }
+        .warning { background: #fff3cd; color: #856404; }
+        .error { background: #f8d7da; color: #721c24; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .brave-tip {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 PWA Checker para Brave</h1>
+    
+    <div class="brave-tip">
+        <h3>⚠️ Problemas conocidos con PWAs en Brave:</h3>
+        <ul>
+            <li>Brave es más estricto que Chrome con los requisitos PWA</li>
+            <li>A veces necesitas recargar la página varias veces</li>
+            <li>El botón puede tardar 30-60 segundos en aparecer</li>
+            <li>Algunos sitios necesitan configuración especial</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Estado del navegador</h2>
+        <div id="browserStatus"></div>
+    </div>
+
+    <div class="card">
+        <h2>Verificación PWA</h2>
+        <div id="pwaChecks"></div>
+    </div>
+
+    <div class="card">
+        <h2>Acciones</h2>
+        <button onclick="checkAll()">🔄 Verificar Todo</button>
+        <button onclick="clearCaches()">🗑️ Limpiar Cachés</button>
+        <button onclick="testInstall()">📱 Probar Instalación</button>
+        <button onclick="forceReload()">♻️ Recargar Forzado</button>
+    </div>
+
+    <div class="card">
+        <h2>Registro de eventos</h2>
+        <div id="eventLog"></div>
+    </div>
+
+    <script>
+        let deferredPrompt = null;
+        const log = (msg, type = 'info') => {
+            const time = new Date().toLocaleTimeString();
+            document.getElementById('eventLog').innerHTML += 
+                `<div class="status ${type}">[${time}] ${msg}</div>`;
+        };
+
+        //verificar navegador
+        function checkBrowser() {
+            const ua = navigator.userAgent;
+            const isBrave = navigator.brave && navigator.brave.isBrave;
+            const isChrome = ua.includes('Chrome');
+            const version = ua.match(/Chrome\/(\d+)/)?.[1];
+            
+            let html = '';
+            
+            if (isBrave || ua.includes('Brave')) {
+                html += '<p class="status ok">✓ Navegador Brave detectado</p>';
+            } else if (isChrome) {
+                html += '<p class="status warning">⚠️ Chrome detectado (no Brave)</p>';
+            } else {
+                html += '<p class="status error">✗ Navegador no compatible</p>';
+            }
+            
+            html += `<p>User Agent: <code>${ua}</code></p>`;
+            html += `<p>Versión Chrome: ${version || 'No detectada'}</p>`;
+            html += `<p>URL actual: ${location.href}</p>`;
+            html += `<p>Protocolo: ${location.protocol} ${location.protocol === 'https:' ? '✓' : '✗'}</p>`;
+            
+            document.getElementById('browserStatus').innerHTML = html;
+        }
+
+        //verificar pwa
+        async function checkPWA() {
+            let html = '';
+            let score = 0;
+            
+            //https
+            if (location.protocol === 'https:' || location.hostname === 'localhost') {
+                html += '<p class="status ok">✓ HTTPS/localhost</p>';
+                score++;
+            } else {
+                html += '<p class="status error">✗ Requiere HTTPS</p>';
+            }
+            
+            //service worker
+            if ('serviceWorker' in navigator) {
+                html += '<p class="status ok">✓ Service Worker soportado</p>';
+                const regs = await navigator.serviceWorker.getRegistrations();
+                if (regs.length > 0) {
+                    html += '<p class="status ok">✓ Service Worker registrado</p>';
+                    score++;
+                } else {
+                    html += '<p class="status warning">⚠️ Service Worker no registrado</p>';
+                }
+            } else {
+                html += '<p class="status error">✗ Service Worker no soportado</p>';
+            }
+            
+            //manifest
+            try {
+                const manifestLink = document.querySelector('link[rel="manifest"]');
+                if (manifestLink) {
+                    const response = await fetch(manifestLink.href);
+                    const manifest = await response.json();
+                    html += '<p class="status ok">✓ Manifest encontrado</p>';
+                    
+                    //verificar campos requeridos
+                    const required = ['name', 'short_name', 'icons', 'start_url', 'display'];
+                    const missing = required.filter(field => !manifest[field]);
+                    
+                    if (missing.length === 0) {
+                        html += '<p class="status ok">✓ Campos requeridos presentes</p>';
+                        score++;
+                    } else {
+                        html += `<p class="status warning">⚠️ Faltan campos: ${missing.join(', ')}</p>`;
+                    }
+                    
+                    //verificar iconos
+                    if (manifest.icons && manifest.icons.length > 0) {
+                        const sizes = manifest.icons.map(i => i.sizes);
+                        const has192 = sizes.some(s => s && s.includes('192'));
+                        const has512 = sizes.some(s => s && s.includes('512'));
+                        
+                        if (has192 && has512) {
+                            html += '<p class="status ok">✓ Iconos 192x192 y 512x512</p>';
+                            score++;
+                        } else {
+                            html += '<p class="status warning">⚠️ Faltan iconos requeridos</p>';
+                        }
+                    }
+                    
+                    //mostrar manifest
+                    html += '<details><summary>Ver Manifest</summary><pre>' + 
+                           JSON.stringify(manifest, null, 2) + '</pre></details>';
+                } else {
+                    html += '<p class="status error">✗ No hay link a manifest</p>';
+                }
+            } catch (e) {
+                html += '<p class="status error">✗ Error al cargar manifest: ' + e.message + '</p>';
+            }
+            
+            //puntuación
+            html = `<h3>Puntuación: ${score}/4</h3>` + html;
+            
+            //recomendaciones para brave
+            if (score < 4) {
+                html += '<div class="brave-tip"><strong>Recomendaciones para Brave:</strong><ul>';
+                html += '<li>Asegúrate de que TODOS los iconos existan</li>';
+                html += '<li>Prueba con "display": "standalone" o "fullscreen"</li>';
+                html += '<li>Añade "scope": "/" al manifest</li>';
+                html += '<li>Espera 30-60 segundos después de cargar</li>';
+                html += '<li>Intenta recargar la página varias veces</li>';
+                html += '</ul></div>';
+            }
+            
+            document.getElementById('pwaChecks').innerHTML = html;
+        }
+
+        //eventos pwa
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            log('¡Evento beforeinstallprompt capturado!', 'ok');
+            log('El botón de instalación debería aparecer ahora', 'ok');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            log('¡App instalada correctamente!', 'ok');
+        });
+
+        //funciones de acción
+        function checkAll() {
+            document.getElementById('eventLog').innerHTML = '';
+            log('Iniciando verificación completa...');
+            checkBrowser();
+            checkPWA();
+        }
+
+        async function clearCaches() {
+            log('Limpiando cachés...');
+            
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (let reg of regs) {
+                    await reg.unregister();
+                }
+                log('Service Workers desregistrados', 'ok');
+            }
+            
+            if ('caches' in window) {
+                const names = await caches.keys();
+                for (let name of names) {
+                    await caches.delete(name);
+                }
+                log('Cachés eliminados', 'ok');
+            }
+            
+            log('Recarga la página para reiniciar', 'warning');
+        }
+
+        function testInstall() {
+            if (deferredPrompt) {
+                log('Mostrando prompt de instalación...');
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') {
+                        log('Instalación aceptada', 'ok');
+                    } else {
+                        log('Instalación rechazada', 'warning');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                log('No hay prompt de instalación disponible', 'error');
+                log('Posibles razones:', 'warning');
+                log('1. La app ya está instalada');
+                log('2. Falta algún requisito PWA');
+                log('3. Brave necesita más tiempo (espera 30-60 seg)');
+                log('4. Intenta recargar la página');
+            }
+        }
+
+        function forceReload() {
+            log('Recargando página...');
+            setTimeout(() => {
+                location.reload(true);
+            }, 500);
+        }
+
+        //verificar al cargar
+        window.addEventListener('load', () => {
+            checkAll();
+            
+            //verificar periódicamente
+            let checkCount = 0;
+            const checkInterval = setInterval(() => {
+                checkCount++;
+                if (deferredPrompt) {
+                    log(`Prompt disponible después de ${checkCount * 5} segundos`, 'ok');
+                    clearInterval(checkInterval);
+                } else if (checkCount > 12) {
+                    log('No se detectó prompt después de 60 segundos', 'warning');
+                    clearInterval(checkInterval);
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "pwa-test",
+  "version": "1.0.0",
+  "description": "PWA Test Project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "python -m http.server 8000"
+  },
+  "keywords": ["pwa", "progressive-web-app", "test"],
+  "author": "",
+  "license": "MIT"
+}

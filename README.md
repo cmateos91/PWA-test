@@ -1,5 +1,46 @@
 # PWA Test - Instrucciones de Configuración
 
+## 🚨 ¿No ves el botón de instalación en Brave?
+
+### El problema con Brave y las PWAs:
+
+Brave es más estricto que Chrome con los requisitos de PWA. Tu sitio en https://pwa-test-orcin.vercel.app/ cumple con HTTPS, pero probablemente faltan los **iconos PNG**.
+
+### Solución rápida:
+
+1. **Genera los iconos**: Abre `icon-generator.html` en tu navegador local
+2. **Click en "Generar Todos los Iconos"**
+3. **Descarga todos los iconos PNG**
+4. **Colócalos en la carpeta `/icons/`**
+5. **Haz commit y push a GitHub** (Vercel se actualizará automáticamente)
+6. **Espera 2-3 minutos** y recarga tu sitio en Brave
+
+### Verificación en Brave:
+
+1. Abre https://pwa-test-orcin.vercel.app/brave-check.html
+2. Esta página te mostrará exactamente qué está fallando
+3. Si todo está correcto, espera 30-60 segundos (Brave es lento)
+
+### Trucos específicos para Brave:
+
+- **Recarga la página 2-3 veces**
+- **Espera al menos 30 segundos** en la página
+- **Abre DevTools** → Application → Manifest (a veces ayuda)
+- **Limpia caché**: Ctrl+Shift+R
+- Si nada funciona, prueba en una **ventana incógnito**
+
+### ¿Sigue sin funcionar?
+
+Prueba estos cambios en el manifest.json:
+```json
+{
+  "scope": "/",
+  "id": "/?source=pwa",
+  "categories": ["utilities"],
+  "prefer_related_applications": false
+}
+```
+
 ## ✅ Lo que ya tienes implementado:
 
 1. **index.html** - Con todos los meta tags necesarios para PWA
