@@ -4,7 +4,7 @@ body {
     margin-top: 50px;
 }
 
-#installBtn, #iosInstallBtn {
+#installBtn, #iosInstallBtn
 #installBtn {
     padding: 10px 20px;
     font-size: 16px;
