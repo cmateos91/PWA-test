@@ -4,11 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PWA Test</title>
+    
+    <!--meta tags para pwa-->
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PWA Test">
+    
+    <!--manifest-->
+    <link rel="manifest" href="manifest.json">
+    
+    <!--iconos para ios-->
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    
+    <!--estilos-->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>PWA Demo</h1>
-
-    <button id="installBtn">Instalar App en Android</button>
-    <button id="iosInstallBtn">Instalar en iOS</button>
+    <div class="container">
+        <h1>PWA Demo</h1>
+        <p class="subtitle">Prueba de Progressive Web App</p>
+        
+        <div class="buttons">
+            <button id="installBtn" style="display: none;">
+                <span class="icon">📱</span>
+                Instalar App
+            </button>
+            
+            <div id="iosInstallInstructions" style="display: none;">
+                <h3>Para instalar en iOS:</h3>
+                <ol>
+                    <li>Toca el botón compartir <span class="share-icon">⬆️</span></li>
+                    <li>Selecciona "Añadir a pantalla de inicio"</li>
+                    <li>Dale un nombre y toca "Añadir"</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div id="installStatus" class="status"></div>
+    </div>
+    
+    <script src="app.js"></script>
 </body>
 </html>
